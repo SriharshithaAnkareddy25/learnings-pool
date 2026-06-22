@@ -10,8 +10,10 @@ __pycache__/
 /mcp/dist/
 *.egg-info/
 
-# Local node data / secrets (iroh keypair, doc store)
-/data/
+# Local node data / secrets (iroh keypair, doc store) — never commit these.
+# Unanchored so it matches at any depth (e.g. daemon/data/).
+data/
+keypair
 *.keypair
 
 # Editor / OS
