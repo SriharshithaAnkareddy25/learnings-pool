@@ -1,0 +1,16 @@
+[project]
+name = "learnings-mcp"
+version = "0.1.0"
+description = "MCP server exposing PAI learnings synced over iroh (forwards to the local daemon)"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",   # official Model Context Protocol SDK — builds the agent-facing server
+    "httpx>=0.27",  # used to call the Rust daemon's localhost HTTP API
+]
+
+[project.scripts]
+learnings-mcp = "learnings_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

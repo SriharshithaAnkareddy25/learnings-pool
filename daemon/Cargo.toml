@@ -1,0 +1,40 @@
+[package]
+name = "learnings-daemon"
+version = "0.1.0"
+edition = "2021"
+description = "Always-on worker that syncs PAI learnings between teammates over iroh"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# --- iroh: peer-to-peer transport + the auto-syncing document store ---
+# Versions pinned to match the working `tauri-todos` example in iroh-examples.
+iroh = "1.0.0"
+iroh-docs = "0.101"   # the multi-writer key/value store that auto-converges between peers
+iroh-blobs = "0.103"  # storage layer iroh-docs builds on
+iroh-gossip = "0.101" # peer-discovery layer iroh-docs builds on
+
+# --- data: turn our Learning records into JSON and back ---
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bytes = "1"
+
+# --- async runtime + helpers ---
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+n0-future = "0.3"
+
+# --- local HTTP API the Python MCP server will call (Phase 6) ---
+axum = "0.8"
+
+# --- watch PAI's KNOWLEDGE/ folder for new learnings (Phase 5) ---
+notify = "6"
+
+# --- content-hash that becomes each learning's id (Phase 2) ---
+blake3 = "1"
+
+# --- command-line interface: pair / add / list / watch (Phase 3) ---
+clap = { version = "4", features = ["derive"] }
+
+# --- error handling + temp files ---
+anyhow = "1"
+tempfile = "3"

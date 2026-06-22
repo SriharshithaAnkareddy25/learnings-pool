@@ -1,0 +1,20 @@
+# Rust
+/daemon/target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+/mcp/build/
+/mcp/dist/
+*.egg-info/
+
+# Local node data / secrets (iroh keypair, doc store)
+/data/
+*.keypair
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
