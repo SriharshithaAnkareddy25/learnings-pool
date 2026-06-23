@@ -1,15 +1,15 @@
-//! Phase 2 — the learnings store (the "librarian").
+//! Phase 2/3 — the learnings store (the "librarian").
 //!
 //! Defines what a `Learning` is, files it into the shared notebook (the iroh-docs `Doc`)
 //! keyed by a content fingerprint, reads learnings back, and can notify us when new ones
-//! arrive. Adapted from the `tauri-todos` example (which manages todos the same way).
+//! arrive. Phase 3 adds opening the *same* notebook across separate CLI runs (`open`).
 
 use std::str::FromStr;
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, anyhow, ensure};
 use bytes::Bytes;
 use iroh_docs::{
-    AuthorId, DocTicket,
+    AuthorId, DocTicket, NamespaceId,
     api::{Doc, protocol::ShareMode},
     engine::LiveEvent,
     store::Query,
@@ -77,39 +77,51 @@ impl Learning {
 pub struct Learnings {
     iroh: Iroh,
     doc: Doc,
-    ticket: DocTicket,
     author: AuthorId,
 }
 
 impl Learnings {
-    /// Open the shared notebook.
-    /// * `ticket = None`  → create a brand-new notebook (the first peer).
-    /// * `ticket = Some`  → join the teammate's existing notebook (Phase 3 uses this).
-    pub async fn new(ticket: Option<String>, iroh: Iroh) -> Result<Self> {
-        let author = iroh.docs().author_create().await?;
-
-        let doc = match ticket {
-            None => iroh.docs().create().await?,
-            Some(ticket) => {
-                let ticket = DocTicket::from_str(&ticket)?;
-                iroh.docs().import(ticket).await?
-            }
-        };
-
-        // A write-share ticket others can use to join this notebook.
-        let ticket = doc.share(ShareMode::Write, Default::default()).await?;
-
-        Ok(Self { iroh, doc, ticket, author })
+    /// Create a brand-new shared notebook (the first peer / `pair create`).
+    pub async fn create(iroh: Iroh) -> Result<Self> {
+        let doc = iroh.docs().create().await?;
+        Self::with_doc(iroh, doc).await
     }
 
-    /// The share ticket — the string you hand a teammate so they can join (Phase 3).
-    pub fn ticket(&self) -> String {
-        self.ticket.to_string()
+    /// Join a teammate's notebook using their ticket (`pair join <ticket>`).
+    pub async fn join(iroh: Iroh, ticket: &str) -> Result<Self> {
+        let ticket = DocTicket::from_str(ticket).context("invalid ticket")?;
+        let doc = iroh.docs().import(ticket).await?;
+        Self::with_doc(iroh, doc).await
+    }
+
+    /// Reopen an already-known notebook by id (used by `add` / `list` / `watch`).
+    pub async fn open(iroh: Iroh, id: NamespaceId) -> Result<Self> {
+        let doc = iroh
+            .docs()
+            .open(id)
+            .await?
+            .ok_or_else(|| anyhow!("notebook {id} not found — run `pair create` or `pair join` first"))?;
+        Self::with_doc(iroh, doc).await
+    }
+
+    async fn with_doc(iroh: Iroh, doc: Doc) -> Result<Self> {
+        // Reuse the node's stable default author so writes are attributed consistently.
+        let author = iroh.docs().author_default().await?;
+        Ok(Self { iroh, doc, author })
+    }
+
+    /// This notebook's id — what we save locally to reopen it later.
+    pub fn id(&self) -> NamespaceId {
+        self.doc.id()
+    }
+
+    /// A write-share ticket — the string you hand a teammate so they can join.
+    pub async fn share_ticket(&self) -> Result<String> {
+        let ticket = self.doc.share(ShareMode::Write, Default::default()).await?;
+        Ok(ticket.to_string())
     }
 
     /// Notifies on every change, including learnings that arrive from the teammate.
-    /// Used in Phase 5 to mirror incoming learnings into PAI's KNOWLEDGE/ folder.
-    #[allow(dead_code)]
     pub async fn subscribe(&self) -> Result<impl Stream<Item = Result<LiveEvent>> + use<>> {
         self.doc.subscribe().await
     }

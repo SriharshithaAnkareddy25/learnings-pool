@@ -70,7 +70,8 @@ impl Iroh {
         })
     }
 
-    /// The network endpoint (the "phone").
+    /// The network endpoint (the "phone"). Used by the HTTP status route in Phase 6.
+    #[allow(dead_code)]
     pub fn endpoint(&self) -> &Endpoint {
         self.router.endpoint()
     }
