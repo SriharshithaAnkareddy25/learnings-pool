@@ -3,6 +3,7 @@
 //! Phase 3: a real CLI — `id`, `pair create`, `pair join`, `add`, `list`, `watch`.
 //! Run `learnings-daemon --help` to see commands.
 
+mod bridge;
 mod cli;
 mod learnings;
 mod node;

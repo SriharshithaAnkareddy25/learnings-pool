@@ -30,7 +30,12 @@ pub struct Iroh {
 
 impl Iroh {
     /// Start a node, persisting everything (identity + data) under `path`.
-    pub async fn new(path: PathBuf) -> Result<Self> {
+    ///
+    /// `bind_port` pins the UDP port. Leaving it `None` uses an ephemeral port (normal use).
+    /// Pinning it keeps this node's address stable across restarts, which is what lets two
+    /// nodes on one machine reach each other directly (over loopback/LAN) without depending on
+    /// a relay — the basis of the local two-node test.
+    pub async fn new(path: PathBuf, bind_port: Option<u16>) -> Result<Self> {
         // Make sure the data folder exists.
         tokio::fs::create_dir_all(&path).await?;
 
@@ -39,10 +44,13 @@ impl Iroh {
 
         // The Endpoint is the network "phone". `presets::N0` uses n0's public relays
         // so two machines can reach each other even behind home routers (NAT).
-        let endpoint = iroh::Endpoint::builder(iroh::endpoint::presets::N0)
-            .secret_key(key)
-            .bind()
-            .await?;
+        let mut builder = iroh::Endpoint::builder(iroh::endpoint::presets::N0).secret_key(key);
+        if let Some(port) = bind_port {
+            builder = builder
+                .bind_addr((std::net::Ipv4Addr::UNSPECIFIED, port))
+                .map_err(|e| anyhow::anyhow!("invalid bind port {port}: {e:?}"))?;
+        }
+        let endpoint = builder.bind().await?;
 
         // Gossip: helps nodes find and track each other. Docs needs it underneath.
         let gossip = Gossip::builder().spawn(endpoint.clone());
@@ -79,6 +87,18 @@ impl Iroh {
     /// This node's permanent public identity — its "phone number" on the network.
     pub fn endpoint_id(&self) -> EndpointId {
         self.router.endpoint().id()
+    }
+
+    /// Try to connect to a relay so far-apart teammates (behind separate NATs) can reach each
+    /// other and hole-punch. We wait, but only up to a few seconds: where the relay is
+    /// unreachable (UDP-restricted networks/CI), nodes on the same machine or LAN still reach
+    /// each other over the direct addresses already in the ticket, so we proceed instead of
+    /// hanging forever.
+    pub async fn online(&self) {
+        let wait = std::time::Duration::from_secs(10);
+        if tokio::time::timeout(wait, self.router.endpoint().online()).await.is_err() {
+            eprintln!("(no relay yet — continuing with direct addresses)");
+        }
     }
 
     /// The docs protocol — used from Phase 2 onward to store/sync learnings.

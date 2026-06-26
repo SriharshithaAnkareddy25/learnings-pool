@@ -10,7 +10,7 @@ use anyhow::{Context, Result, anyhow, ensure};
 use bytes::Bytes;
 use iroh_docs::{
     AuthorId, DocTicket, NamespaceId,
-    api::{Doc, protocol::ShareMode},
+    api::{Doc, protocol::AddrInfoOptions, protocol::ShareMode},
     engine::LiveEvent,
     store::Query,
     sync::Entry,
@@ -116,9 +116,28 @@ impl Learnings {
     }
 
     /// A write-share ticket — the string you hand a teammate so they can join.
+    ///
+    /// `RelayAndAddresses` bakes our relay URL **and** direct addresses into the ticket. The
+    /// default (`Id`) embeds only the NodeId and leans entirely on iroh-DNS address lookup to
+    /// find us — which fails the moment that lookup is unavailable, leaving the joiner with no
+    /// way to reach us. Including addresses is what iroh-docs' own sync tests do.
     pub async fn share_ticket(&self) -> Result<String> {
-        let ticket = self.doc.share(ShareMode::Write, Default::default()).await?;
+        let ticket = self
+            .doc
+            .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
+            .await?;
         Ok(ticket.to_string())
+    }
+
+    /// Begin actively syncing this notebook with `peers` (dialing them and accepting from them).
+    ///
+    /// Critically, **opening a doc does not start sync** — only `import` (the join path) does, and
+    /// that state does not survive a process restart. So every long-running command (`watch`,
+    /// `bridge`) must call this after opening, or it will sit idle and never connect to anyone.
+    /// Passing the peer's full address (not just its id) lets us connect without a relay or DNS.
+    pub async fn start_sync(&self, peers: Vec<iroh::EndpointAddr>) -> Result<()> {
+        self.doc.start_sync(peers).await?;
+        Ok(())
     }
 
     /// Notifies on every change, including learnings that arrive from the teammate.
@@ -160,8 +179,23 @@ impl Learnings {
         Ok(out)
     }
 
+    /// Every learning, including tombstoned ones — used by the bridge so it can mirror a
+    /// delete to disk. Like `list`, but does not drop `is_delete` records.
+    pub async fn list_all(&self) -> Result<Vec<Learning>> {
+        let entries = self.doc.get_many(Query::single_latest_per_key()).await?;
+        let entries = entries.collect::<Vec<Result<Entry>>>().await;
+
+        let mut out = Vec::new();
+        for entry in entries.into_iter().flatten() {
+            if let Some(learning) = self.learning_from_entry(&entry).await? {
+                out.push(learning);
+            }
+        }
+        out.sort_by_key(|l| l.created);
+        Ok(out)
+    }
+
     /// Fetch one learning by id, if present.
-    #[allow(dead_code)]
     pub async fn get(&self, id: &str) -> Result<Option<Learning>> {
         let entry = self
             .doc

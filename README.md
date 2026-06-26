@@ -22,16 +22,30 @@ The **only** coupling between the two is the daemon's localhost HTTP API.
 
 ## Status
 
-Phase 0 (scaffold) — project structure and dependencies only. Nothing syncs yet.
+Two-node sync works and bridges to disk. Drop a learning into one machine's `KNOWLEDGE/`
+folder and it appears in the other's, peer-to-peer over iroh.
 
 | Phase | What it adds |
 |-------|--------------|
-| 0 ✅  | Repo + two sub-projects + dependencies (this) |
-| 1     | iroh node (machine identity + network presence) |
-| 2     | Learnings store (the synced records) |
-| 3     | Pairing CLI (`pair`, `add`, `list`, `watch`) |
-| 4     | Two-node sync working (de-risk gate) |
-| 5     | Bridge to PAI's `KNOWLEDGE/` folder |
+| 0 ✅  | Repo + two sub-projects + dependencies |
+| 1 ✅  | iroh node (machine identity + network presence) |
+| 2 ✅  | Learnings store (the synced records) |
+| 3 ✅  | Pairing CLI (`pair`, `add`, `list`, `watch`) |
+| 4 ✅  | Two-node sync working (de-risk gate) — `scripts/test-sync.sh` |
+| 5 ✅  | Bridge to a `KNOWLEDGE/` folder (`bridge`) — `scripts/test-bridge.sh` |
 | 6     | Localhost HTTP API |
 | 7     | Python MCP server |
 | 8     | Pairing UX + run-on-boot |
+
+### Verify it yourself
+
+```bash
+cd daemon && cargo build
+../scripts/test-sync.sh     # Phase 4: a learning written on A reaches B over iroh
+../scripts/test-bridge.sh   # Phase 5: a .md dropped in A's folder appears in B's folder
+```
+
+Both simulate two machines on one computer with two data folders. Each node pins a fixed UDP
+port (`--port`) so its address stays stable across the separate CLI runs and the two can reach
+each other directly without a relay; real, separate machines use the relay + DNS discovery
+instead.
