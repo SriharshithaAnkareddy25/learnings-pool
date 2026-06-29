@@ -20,3 +20,12 @@ keypair
 .DS_Store
 .idea/
 .vscode/
+
+# Stray dir from a hardcoded ${HOME} bug
+${HOME}/
+
+# sendme temp blobs
+.sendme-send-*/
+
+# venv lib dir
+/daemon/lib/
