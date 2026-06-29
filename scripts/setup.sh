@@ -32,6 +32,15 @@ echo "==> Installing the binary to $BIN_DST ..."
 mkdir -p "$HOME/.local/bin" "$DATA_DIR" "$KNOWLEDGE_DIR"
 install -m 0755 "$BIN_SRC" "$BIN_DST"
 
+echo "==> Setting up the Python MCP server (venv + deps)..."
+if command -v uv >/dev/null 2>&1; then
+  (cd "$ROOT/mcp" && uv sync)
+  echo "    MCP server ready at $ROOT/mcp/.venv/bin/learnings-mcp"
+else
+  echo "NOTE: 'uv' is not installed — needed for the MCP server. Install it
+       (https://docs.astral.sh/uv/) and run:  cd $ROOT/mcp && uv sync"
+fi
+
 # Pair this machine into the shared notebook (only if it isn't already paired).
 if [ -f "$DATA_DIR/active-doc" ]; then
   echo "==> Already paired (found $DATA_DIR/active-doc) — skipping pairing."
