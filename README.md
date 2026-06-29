@@ -5,7 +5,7 @@ Sync Claude/PAI **learnings** between two teammates over [iroh](https://iroh.com
 
 When either teammate's agent records a learning, it converges into a shared pool that both
 agents can read. See the full design in
-[`../iroh-examples-main/Plans/this-is-the-repo-sleepy-tiger.md`](../iroh-examples-main/Plans/this-is-the-repo-sleepy-tiger.md).
+[`Plans/learnings-pool-design.md`](Plans/learnings-pool-design.md).
 
 ## Layout
 
