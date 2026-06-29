@@ -15,7 +15,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_SRC="$ROOT/daemon/target/release/learnings-daemon"
 BIN_DST="$HOME/.local/bin/learnings-daemon"
-DATA_DIR="$HOME/.local/share/learnings-sync"
+DATA_DIR="$HOME/.local/share/learnings-pool"
 UNIT_DST="$HOME/.config/systemd/user/learnings-daemon.service"
 
 # Configurable via env vars — override any of these before running, e.g.
@@ -72,7 +72,7 @@ mkdir -p "$(dirname "$UNIT_DST")"
 # Generate the unit with the chosen paths/ports baked in, so it matches this setup exactly.
 cat > "$UNIT_DST" <<UNIT
 [Unit]
-Description=learnings-sync daemon — syncs PAI learnings between teammates over iroh
+Description=learnings-pool daemon — syncs PAI learnings between teammates over iroh
 After=network-online.target
 Wants=network-online.target
 

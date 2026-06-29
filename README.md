@@ -1,4 +1,4 @@
-# learnings-sync
+# learnings-pool
 
 A shared notebook for two Claude/PAI agents. When your agent learns something
 worth keeping, it writes it down — and a moment later your teammate's agent can
@@ -27,7 +27,7 @@ The only coupling between the two halves is the daemon's localhost HTTP API.
 ## Layout
 
 ```
-learnings-sync/
+learnings-pool/
 ├── daemon/   Rust — the always-on background worker. Holds the iroh node,
 │             keeps the shared pool synced, watches KNOWLEDGE/, and exposes a
 │             small localhost HTTP API.

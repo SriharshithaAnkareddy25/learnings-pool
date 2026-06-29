@@ -1,6 +1,6 @@
 [Unit]
-Description=learnings-sync daemon — syncs PAI learnings between teammates over iroh
-Documentation=https://github.com/your-org/learnings-sync
+Description=learnings-pool daemon — syncs PAI learnings between teammates over iroh
+Documentation=https://github.com/Sriharshitha05/learnings-pool
 # Wait for the network so the node can reach a relay/peers on start.
 After=network-online.target
 Wants=network-online.target
@@ -11,7 +11,7 @@ Type=simple
 # HTTP API (what the MCP server calls), and bridges PAI's KNOWLEDGE/ folder both ways.
 # %h expands to the user's home directory.
 ExecStart=%h/.local/bin/learnings-daemon \
-    --data-dir %h/.local/share/learnings-sync \
+    --data-dir %h/.local/share/learnings-pool \
     --port 11801 \
     serve --api-port 7777 \
     --knowledge-dir %h/.claude/PAI/MEMORY/KNOWLEDGE

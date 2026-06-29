@@ -20,7 +20,7 @@ You (machine A)                          Teammate (machine B)
 ### 1. First teammate — create the notebook
 
 ```bash
-cd ~/Projects/learnings-sync
+cd ~/Projects/learnings-pool
 ./scripts/setup.sh
 ```
 
@@ -30,7 +30,7 @@ service. Copy the ticket and send it to your teammate (Signal, Slack DM, etc. �
 ### 2. Second teammate — join with the ticket
 
 ```bash
-cd ~/Projects/learnings-sync
+cd ~/Projects/learnings-pool
 ./scripts/setup.sh join <paste-the-ticket-here>
 ```
 
@@ -42,7 +42,7 @@ Register the MCP server with Claude Code (once):
 
 ```bash
 claude mcp add learnings --env LEARNINGS_API=http://127.0.0.1:7777 -- \
-  uv run --project ~/Projects/learnings-sync/mcp learnings-mcp
+  uv run --project ~/Projects/learnings-pool/mcp learnings-mcp
 ```
 
 That's it. From now on your agent has four tools: `share_learning`, `search_learnings`,

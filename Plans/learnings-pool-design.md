@@ -16,7 +16,7 @@ of the same system, and you need both:
   direct, encrypted, peer-to-peer, no central server to host or secure.
 
 > **`iroh-examples` (this clone) is reference only** — nothing is built or changed here.
-> The implementation lives in a **new standalone repo** (suggested `~/Projects/learnings-sync/`).
+> The implementation lives in a **new standalone repo** (suggested `~/Projects/learnings-pool/`).
 
 ---
 
@@ -70,7 +70,7 @@ of the same system, and you need both:
 ## Implementation steps
 
 ### Phase 0 — New repo, two parts
-`~/Projects/learnings-sync/`, its own git repo, with:
+`~/Projects/learnings-pool/`, its own git repo, with:
 - `daemon/` — Rust crate (cargo). Pin the exact versions `tauri-todos` uses:
   `iroh 1.0`, `iroh-docs 0.101`, `iroh-blobs 0.103`, `iroh-gossip 0.101` (see
   `tauri-todos/src-tauri/Cargo.toml`). Plus `axum`, `notify`, `serde`, `blake3`.
