@@ -33,7 +33,7 @@ folder and it appears in the other's, peer-to-peer over iroh.
 | 3 ✅  | Pairing CLI (`pair`, `add`, `list`, `watch`) |
 | 4 ✅  | Two-node sync working (de-risk gate) — `scripts/test-sync.sh` |
 | 5 ✅  | Bridge to a `KNOWLEDGE/` folder (`bridge`) — `scripts/test-bridge.sh` |
-| 6     | Localhost HTTP API |
+| 6 ✅  | Localhost HTTP API (`serve`) — `scripts/test-api.sh` |
 | 7     | Python MCP server |
 | 8     | Pairing UX + run-on-boot |
 
@@ -43,6 +43,22 @@ folder and it appears in the other's, peer-to-peer over iroh.
 cd daemon && cargo build
 ../scripts/test-sync.sh     # Phase 4: a learning written on A reaches B over iroh
 ../scripts/test-bridge.sh   # Phase 5: a .md dropped in A's folder appears in B's folder
+../scripts/test-api.sh      # Phase 6: a learning POSTed to A's API is readable from B's API
+```
+
+### The daemon (Phase 6)
+
+`serve` is the always-on process: it keeps the notebook syncing and exposes a localhost HTTP API
+(bound to `127.0.0.1` only) that the Phase-7 MCP server will call.
+
+```bash
+learnings-daemon --port 11801 serve --api-port 7777            # API only
+learnings-daemon --port 11801 serve --api-port 7777 --knowledge-dir  # API + bridge PAI's KNOWLEDGE
+
+curl localhost:7777/status
+curl -X POST localhost:7777/learnings -d '{"title":"Use X","body":"...","tags":["api"]}'
+curl 'localhost:7777/learnings?query=X'
+curl localhost:7777/learnings/<id>
 ```
 
 Both simulate two machines on one computer with two data folders. Each node pins a fixed UDP

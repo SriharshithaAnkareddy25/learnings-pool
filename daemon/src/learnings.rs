@@ -74,6 +74,10 @@ impl Learning {
 }
 
 /// The store: wraps one shared notebook (`Doc`) and files/reads `Learning`s in it.
+///
+/// `Clone` is cheap — every field is a handle to shared state (the same node, the same doc), not
+/// a copy of the data. This lets the HTTP API and the bridge hold the store at the same time.
+#[derive(Clone)]
 pub struct Learnings {
     iroh: Iroh,
     doc: Doc,
@@ -127,6 +131,13 @@ impl Learnings {
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
             .await?;
         Ok(ticket.to_string())
+    }
+
+    /// How many peers this notebook is set up to sync with — a rough "are we paired/connected?"
+    /// signal for the `/status` endpoint.
+    pub async fn peer_count(&self) -> Result<usize> {
+        let peers = self.doc.get_sync_peers().await?;
+        Ok(peers.map(|p| p.len()).unwrap_or(0))
     }
 
     /// Begin actively syncing this notebook with `peers` (dialing them and accepting from them).

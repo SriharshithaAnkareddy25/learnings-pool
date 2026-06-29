@@ -67,6 +67,16 @@ pub enum Command {
         #[arg(long)]
         knowledge_dir: Option<PathBuf>,
     },
+    /// Run the daemon: keep syncing and serve the localhost HTTP API (what the MCP server calls).
+    Serve {
+        /// Port for the localhost HTTP API.
+        #[arg(long, default_value_t = 7777)]
+        api_port: u16,
+        /// Also mirror this folder while serving (defaults to PAI's KNOWLEDGE memory if the flag
+        /// is given with no value). Omit the flag entirely to run the API only.
+        #[arg(long, num_args = 0..=1, default_missing_value = "")]
+        knowledge_dir: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -152,8 +162,35 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
             let store = open_active_syncing(node, active_path).await?;
             crate::bridge::run(store, dir).await?;
         }
+
+        Command::Serve { api_port, knowledge_dir } => {
+            println!("Connecting to a relay...");
+            node.online().await;
+            let store = open_active_syncing(node, active_path).await?;
+            match knowledge_dir.map(resolve_knowledge_dir) {
+                // API + bridge over one shared store: this is the single always-on process.
+                Some(dir) => {
+                    println!("Also bridging {}", dir.display());
+                    tokio::select! {
+                        r = crate::api::run(store.clone(), api_port) => r?,
+                        r = crate::bridge::run(store, dir) => r?,
+                    }
+                }
+                // API only.
+                None => crate::api::run(store, api_port).await?,
+            }
+        }
     }
     Ok(())
+}
+
+/// `--knowledge-dir` with no value means "use the PAI default"; with a value, use it.
+fn resolve_knowledge_dir(dir: PathBuf) -> PathBuf {
+    if dir.as_os_str().is_empty() {
+        default_knowledge_dir()
+    } else {
+        dir
+    }
 }
 
 /// PAI's curated-knowledge folder — the default target the bridge mirrors.
