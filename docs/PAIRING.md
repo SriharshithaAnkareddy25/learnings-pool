@@ -75,6 +75,32 @@ journalctl --user -u learnings-daemon -f       # live logs
 systemctl --user stop learnings-daemon         # stop syncing
 ```
 
+## Choosing what syncs (and not disturbing your other setup)
+
+By default the daemon syncs your whole PAI `KNOWLEDGE/` folder. To sync only a **dedicated
+folder** instead — so the rest of your PAI memory and any other agents stay untouched — set
+`LEARNINGS_KNOWLEDGE_DIR` when running setup:
+
+```bash
+LEARNINGS_KNOWLEDGE_DIR=~/shared-learnings ./scripts/setup.sh join <ticket>
+```
+
+Already set up? Switch the folder without re-running setup:
+
+```bash
+# edit the --knowledge-dir path in the service file, then:
+nano ~/.config/systemd/user/learnings-daemon.service
+systemctl --user daemon-reload && systemctl --user restart learnings-daemon
+```
+
+Ports are configurable the same way: `LEARNINGS_API_PORT` (default 7777) and
+`LEARNINGS_IROH_PORT` (default 11801) — change them only if something else already uses those.
+
+Running this does **not** stop your other agents: it adds one background daemon and one extra
+MCP server (`claude mcp add` appends, it doesn't replace). The only shared resource is the
+folder above. Note: synced learnings are immutable (no delete in v1), so pick the folder
+**before** dropping anything sensitive in it.
+
 ## Notes
 
 - The daemon binds its HTTP API to `127.0.0.1` only — nothing is exposed to the network.

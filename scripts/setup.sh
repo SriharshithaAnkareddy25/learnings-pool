@@ -16,10 +16,15 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_SRC="$ROOT/daemon/target/release/learnings-daemon"
 BIN_DST="$HOME/.local/bin/learnings-daemon"
 DATA_DIR="$HOME/.local/share/learnings-sync"
-KNOWLEDGE_DIR="$HOME/.claude/PAI/MEMORY/KNOWLEDGE"
-UNIT_SRC="$ROOT/systemd/learnings-daemon.service"
 UNIT_DST="$HOME/.config/systemd/user/learnings-daemon.service"
-IROH_PORT=11801
+
+# Configurable via env vars — override any of these before running, e.g.
+#   LEARNINGS_KNOWLEDGE_DIR=~/sync-notes ./scripts/setup.sh join <ticket>
+# Point KNOWLEDGE_DIR at a DEDICATED folder if you don't want your whole PAI memory synced —
+# only what lands in that folder is shared, and the rest of your setup is untouched.
+KNOWLEDGE_DIR="${LEARNINGS_KNOWLEDGE_DIR:-$HOME/.claude/PAI/MEMORY/KNOWLEDGE}"
+API_PORT="${LEARNINGS_API_PORT:-7777}"
+IROH_PORT="${LEARNINGS_IROH_PORT:-11801}"
 MODE="${1:-create}"
 
 # shellcheck disable=SC1091
@@ -62,9 +67,26 @@ else
   esac
 fi
 
-echo "==> Installing the systemd user service..."
+echo "==> Installing the systemd user service (folder: $KNOWLEDGE_DIR, api: $API_PORT, iroh: $IROH_PORT)..."
 mkdir -p "$(dirname "$UNIT_DST")"
-install -m 0644 "$UNIT_SRC" "$UNIT_DST"
+# Generate the unit with the chosen paths/ports baked in, so it matches this setup exactly.
+cat > "$UNIT_DST" <<UNIT
+[Unit]
+Description=learnings-sync daemon — syncs PAI learnings between teammates over iroh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=$BIN_DST --data-dir $DATA_DIR --port $IROH_PORT serve --api-port $API_PORT --knowledge-dir $KNOWLEDGE_DIR
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+UNIT
 systemctl --user daemon-reload
 systemctl --user enable --now learnings-daemon.service
 
