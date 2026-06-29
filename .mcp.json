@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "learnings": {
+      "command": "uv",
+      "args": ["run", "--project", "./mcp", "learnings-mcp"],
+      "env": {
+        "LEARNINGS_API": "http://127.0.0.1:7777",
+        "LEARNINGS_AUTHOR": "me"
+      }
+    }
+  }
+}

@@ -34,7 +34,7 @@ folder and it appears in the other's, peer-to-peer over iroh.
 | 4 ✅  | Two-node sync working (de-risk gate) — `scripts/test-sync.sh` |
 | 5 ✅  | Bridge to a `KNOWLEDGE/` folder (`bridge`) — `scripts/test-bridge.sh` |
 | 6 ✅  | Localhost HTTP API (`serve`) — `scripts/test-api.sh` |
-| 7     | Python MCP server |
+| 7 ✅  | Python MCP server (the agent's tools) — `scripts/test-mcp.sh` |
 | 8     | Pairing UX + run-on-boot |
 
 ### Verify it yourself
@@ -44,7 +44,24 @@ cd daemon && cargo build
 ../scripts/test-sync.sh     # Phase 4: a learning written on A reaches B over iroh
 ../scripts/test-bridge.sh   # Phase 5: a .md dropped in A's folder appears in B's folder
 ../scripts/test-api.sh      # Phase 6: a learning POSTed to A's API is readable from B's API
+../scripts/test-mcp.sh      # Phase 7: the four MCP tools forward to the daemon
 ```
+
+### Connect your Claude agent (Phase 7)
+
+The MCP server (`mcp/`) gives Claude four tools — `share_learning`, `search_learnings`,
+`get_learning`, `sync_status` — each forwarding to the daemon's HTTP API. It's short-lived
+(Claude launches it per session); the always-on daemon does the syncing.
+
+1. Run the daemon: `learnings-daemon --port 11801 serve --api-port 7777`
+2. Register the server with Claude Code. The repo ships a `.mcp.json`:
+   ```bash
+   claude mcp add learnings -- uv run --project ./mcp learnings-mcp
+   # or rely on the checked-in .mcp.json (command: uv run --project ./mcp learnings-mcp)
+   ```
+   Config via env: `LEARNINGS_API` (default `http://127.0.0.1:7777`), `LEARNINGS_AUTHOR`.
+3. In a session, ask Claude to `share_learning(...)`; from your teammate's machine, ask Claude to
+   `search_learnings(...)` and the entry comes back — one agent's insight, found by the other.
 
 ### The daemon (Phase 6)
 
