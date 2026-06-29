@@ -35,7 +35,11 @@ folder and it appears in the other's, peer-to-peer over iroh.
 | 5 ✅  | Bridge to a `KNOWLEDGE/` folder (`bridge`) — `scripts/test-bridge.sh` |
 | 6 ✅  | Localhost HTTP API (`serve`) — `scripts/test-api.sh` |
 | 7 ✅  | Python MCP server (the agent's tools) — `scripts/test-mcp.sh` |
-| 8     | Pairing UX + run-on-boot |
+| 8 ✅  | Pairing UX + run-on-boot (`scripts/setup.sh`, systemd) — [docs/PAIRING.md](docs/PAIRING.md) |
+
+**Set up two real machines:** see **[docs/PAIRING.md](docs/PAIRING.md)** — `./scripts/setup.sh`
+on the first (prints a ticket), `./scripts/setup.sh join <ticket>` on the second, then
+`claude mcp add` on both.
 
 ### Verify it yourself
 
