@@ -15,9 +15,9 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use iroh::protocol::Router;
 use iroh::{Endpoint, EndpointId, SecretKey};
-use iroh_blobs::{ALPN as BLOBS_ALPN, BlobsProtocol, api::blobs::Blobs, store::fs::FsStore};
-use iroh_docs::{ALPN as DOCS_ALPN, protocol::Docs};
-use iroh_gossip::{ALPN as GOSSIP_ALPN, net::Gossip};
+use iroh_blobs::{api::blobs::Blobs, store::fs::FsStore, BlobsProtocol, ALPN as BLOBS_ALPN};
+use iroh_docs::{protocol::Docs, ALPN as DOCS_ALPN};
+use iroh_gossip::{net::Gossip, ALPN as GOSSIP_ALPN};
 use tokio::io::AsyncWriteExt;
 
 /// A running iroh node: its endpoint, blob store, and the docs protocol.
@@ -96,7 +96,10 @@ impl Iroh {
     /// hanging forever.
     pub async fn online(&self) {
         let wait = std::time::Duration::from_secs(10);
-        if tokio::time::timeout(wait, self.router.endpoint().online()).await.is_err() {
+        if tokio::time::timeout(wait, self.router.endpoint().online())
+            .await
+            .is_err()
+        {
             eprintln!("(no relay yet — continuing with direct addresses)");
         }
     }
@@ -132,9 +135,9 @@ pub async fn load_secret_key(key_path: PathBuf) -> Result<SecretKey> {
         let secret_key = SecretKey::generate();
 
         let key_path = key_path.canonicalize().unwrap_or(key_path);
-        let key_path_parent = key_path
-            .parent()
-            .ok_or_else(|| anyhow::anyhow!("no parent directory found for '{}'", key_path.display()))?;
+        let key_path_parent = key_path.parent().ok_or_else(|| {
+            anyhow::anyhow!("no parent directory found for '{}'", key_path.display())
+        })?;
         tokio::fs::create_dir_all(&key_path_parent).await?;
 
         // Write to a temp file first, then rename — avoids a half-written key file.

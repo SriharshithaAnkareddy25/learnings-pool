@@ -8,6 +8,7 @@ mod bridge;
 mod cli;
 mod learnings;
 mod node;
+mod retrieval;
 
 use anyhow::Result;
 use clap::Parser;

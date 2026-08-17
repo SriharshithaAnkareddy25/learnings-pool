@@ -6,14 +6,14 @@
 
 use std::str::FromStr;
 
-use anyhow::{Context, Result, anyhow, ensure};
+use anyhow::{anyhow, ensure, Context, Result};
 use bytes::Bytes;
 use iroh_docs::{
-    AuthorId, DocTicket, NamespaceId,
-    api::{Doc, protocol::AddrInfoOptions, protocol::ShareMode},
+    api::{protocol::AddrInfoOptions, protocol::ShareMode, Doc},
     engine::LiveEvent,
     store::Query,
     sync::Entry,
+    AuthorId, DocTicket, NamespaceId,
 };
 use n0_future::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,15 @@ impl Learning {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        Self { id, title, body, tags, author, created, is_delete: false }
+        Self {
+            id,
+            title,
+            body,
+            tags,
+            author,
+            created,
+            is_delete: false,
+        }
     }
 
     /// The content fingerprint used as the key. Identical content yields an identical id,
@@ -100,11 +108,9 @@ impl Learnings {
 
     /// Reopen an already-known notebook by id (used by `add` / `list` / `watch`).
     pub async fn open(iroh: Iroh, id: NamespaceId) -> Result<Self> {
-        let doc = iroh
-            .docs()
-            .open(id)
-            .await?
-            .ok_or_else(|| anyhow!("notebook {id} not found — run `pair create` or `pair join` first"))?;
+        let doc = iroh.docs().open(id).await?.ok_or_else(|| {
+            anyhow!("notebook {id} not found — run `pair create` or `pair join` first")
+        })?;
         Self::with_doc(iroh, doc).await
     }
 

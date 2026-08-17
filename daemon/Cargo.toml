@@ -32,6 +32,9 @@ notify = "6"
 # --- content-hash that becomes each learning's id (Phase 2) ---
 blake3 = "1"
 
+# --- local semantic retrieval (model downloads once, then runs through ONNX locally) ---
+fastembed = { version = "5", default-features = false, features = ["hf-hub-rustls-tls", "ort-download-binaries-rustls-tls"] }
+
 # --- command-line interface: pair / add / list / watch (Phase 3) ---
 clap = { version = "4", features = ["derive"] }
 

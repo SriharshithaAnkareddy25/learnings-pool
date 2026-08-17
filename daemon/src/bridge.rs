@@ -218,10 +218,14 @@ fn parse(raw: &str, path: &Path) -> Parsed {
             }
 
             return Parsed {
-                title: title.filter(|t| !t.is_empty()).unwrap_or_else(|| stem(path)),
+                title: title
+                    .filter(|t| !t.is_empty())
+                    .unwrap_or_else(|| stem(path)),
                 body: body.trim_end().to_string(),
                 tags,
-                author: author.filter(|a| !a.is_empty()).unwrap_or_else(|| "pai".into()),
+                author: author
+                    .filter(|a| !a.is_empty())
+                    .unwrap_or_else(|| "pai".into()),
             };
         }
     }

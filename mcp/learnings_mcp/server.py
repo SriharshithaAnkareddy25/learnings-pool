@@ -1,6 +1,6 @@
 """Phase 7 — the MCP server.
 
-Exposes the shared learnings pool to a Claude agent as four MCP tools. Each tool is a thin
+Exposes the shared learnings pool to a Claude agent as five MCP tools. Each tool is a thin
 forwarder to the Rust daemon's localhost HTTP API (Phase 6) — there is no sync or storage logic
 here. This process is short-lived (Claude Code spawns and kills it per session), which is exactly
 why it must NOT hold the iroh node: the always-on daemon does that, and we just call it.
@@ -32,11 +32,11 @@ class DaemonError(Exception):
     """A problem talking to the daemon, phrased for the agent to relay to the user."""
 
 
-def _request(method: str, path: str, **kwargs) -> httpx.Response:
+def _request(method: str, path: str, *, timeout: float = 10.0, **kwargs) -> httpx.Response:
     """Call the daemon, turning connection failures into a clear, actionable message."""
     url = f"{API_BASE}{path}"
     try:
-        resp = httpx.request(method, url, timeout=10.0, **kwargs)
+        resp = httpx.request(method, url, timeout=timeout, **kwargs)
     except httpx.ConnectError as e:
         raise DaemonError(
             f"learnings daemon not reachable at {API_BASE} — start it with "
@@ -86,6 +86,52 @@ def search_learnings(query: str = "") -> list[dict]:
     resp = _request("GET", "/learnings", params={"query": query})
     if resp.status_code >= 400:
         raise DaemonError(f"search failed ({resp.status_code}): {resp.text}")
+    return resp.json()
+
+
+@mcp.tool()
+def retrieve_context(
+    query: str,
+    top_k: int = 5,
+    tags: list[str] | None = None,
+    max_context_tokens: int = 1200,
+    mode: str = "hybrid",
+    min_score: float = 0.3,
+) -> dict:
+    """Retrieve a small, ranked context set before answering a question. This uses hybrid
+    lexical and local semantic retrieval by default and returns excerpts rather than dumping
+    the full knowledge pool. Call get_learning only when a full result is needed.
+
+    Args:
+        query: The question or concept for which context is needed.
+        top_k: Number of results to return (1-50).
+        tags: Optional tags that every result must contain.
+        max_context_tokens: Approximate total excerpt budget across results.
+        mode: Retrieval strategy: "lexical", "semantic", or "hybrid".
+        min_score: Minimum normalized relevance score required for a result.
+
+    Returns the query, retrieval mode, and ranked results with component scores and excerpts.
+    """
+    if not 1 <= top_k <= 50:
+        raise ValueError("top_k must be between 1 and 50")
+    if not 1 <= max_context_tokens <= 10_000:
+        raise ValueError("max_context_tokens must be between 1 and 10000")
+    if not 0 <= min_score <= 1:
+        raise ValueError("min_score must be between 0 and 1")
+    # A conservative four-characters-per-token approximation, divided across returned records.
+    excerpt_chars = min(4000, max(1, (max_context_tokens * 4) // top_k))
+    params = {
+        "query": query,
+        "top_k": top_k,
+        "tags": ",".join(tags or []),
+        "excerpt_chars": excerpt_chars,
+        "mode": mode,
+        "min_score": min_score,
+    }
+    # First semantic use may download and initialize the local model; later calls use its cache.
+    resp = _request("GET", "/retrieve", params=params, timeout=120.0)
+    if resp.status_code >= 400:
+        raise DaemonError(f"context retrieval failed ({resp.status_code}): {resp.text}")
     return resp.json()
 
 

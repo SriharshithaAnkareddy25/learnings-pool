@@ -6,6 +6,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.fastembed_cache/
 /mcp/build/
 /mcp/dist/
 *.egg-info/

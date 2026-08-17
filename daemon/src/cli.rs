@@ -10,16 +10,19 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
-use iroh_docs::{DocTicket, NamespaceId, engine::LiveEvent};
+use iroh_docs::{engine::LiveEvent, DocTicket, NamespaceId};
 use n0_future::StreamExt;
 
 use crate::learnings::Learnings;
 use crate::node::Iroh;
 
 #[derive(Parser)]
-#[command(name = "learnings-daemon", about = "Sync PAI learnings between teammates over iroh")]
+#[command(
+    name = "learnings-daemon",
+    about = "Sync PAI learnings between teammates over iroh"
+)]
 pub struct Cli {
     /// Folder holding this node's identity + data.
     /// Use different folders to simulate two machines on one computer.
@@ -104,7 +107,9 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
             println!("{}", node.endpoint_id());
         }
 
-        Command::Pair { action: PairAction::Create } => {
+        Command::Pair {
+            action: PairAction::Create,
+        } => {
             let store = Learnings::create(node.clone()).await?;
             save_active(active_path, store.id())?;
             println!("Connecting to a relay so the ticket has a reachable address...");
@@ -116,7 +121,9 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
             println!("They join with:  learnings-daemon pair join <ticket>");
         }
 
-        Command::Pair { action: PairAction::Join { ticket } } => {
+        Command::Pair {
+            action: PairAction::Join { ticket },
+        } => {
             // Remember the teammate's address from the ticket, so later `watch`/`bridge` runs can
             // re-dial them directly — `open` carries no peer info, and without a relay/DNS the
             // node id alone isn't enough to find them again.
@@ -129,7 +136,12 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
             println!("Run `watch` (here and on your teammate's machine) to sync.");
         }
 
-        Command::Add { title, body, tags, author } => {
+        Command::Add {
+            title,
+            body,
+            tags,
+            author,
+        } => {
             let store = open_active(node, active_path).await?;
             let tags: Vec<String> = tags.into_iter().filter(|t| !t.is_empty()).collect();
             let learning = store.add(title, body, tags, author).await?;
@@ -143,7 +155,11 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
                 println!("(no learnings yet)");
             }
             for l in all {
-                let tags = if l.tags.is_empty() { String::new() } else { format!("  [{}]", l.tags.join(", ")) };
+                let tags = if l.tags.is_empty() {
+                    String::new()
+                } else {
+                    format!("  [{}]", l.tags.join(", "))
+                };
                 println!("• {}  ({}…){}", l.title, &l.id[..8], tags);
             }
         }
@@ -163,7 +179,10 @@ async fn dispatch(node: &Iroh, active_path: &Path, command: Command) -> Result<(
             crate::bridge::run(store, dir).await?;
         }
 
-        Command::Serve { api_port, knowledge_dir } => {
+        Command::Serve {
+            api_port,
+            knowledge_dir,
+        } => {
             println!("Connecting to a relay...");
             node.online().await;
             let store = open_active_syncing(node, active_path).await?;
@@ -195,7 +214,9 @@ fn resolve_knowledge_dir(dir: PathBuf) -> PathBuf {
 
 /// PAI's curated-knowledge folder — the default target the bridge mirrors.
 fn default_knowledge_dir() -> PathBuf {
-    let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_default();
     home.join(".claude/PAI/MEMORY/KNOWLEDGE")
 }
 

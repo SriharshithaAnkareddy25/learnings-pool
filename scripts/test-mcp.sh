@@ -2,7 +2,7 @@
 #
 # Phase 7 — prove the MCP tool layer forwards to the daemon.
 #
-# Exercises the four MCP tools (share/search/get/sync_status) by calling them directly against a
+# Exercises the five MCP tools (share/search/retrieve/get/sync_status) by calling them directly against a
 # running daemon — the same code paths Claude hits, without needing a full Claude session. Also
 # checks the daemon-down path returns a clean message, not a traceback.
 #
@@ -57,6 +57,10 @@ hits = s.search_learnings("roundtrip")
 assert any(h["id"] == lid for h in hits), hits
 print("   search_learnings-> found", len(hits), "match(es)")
 
+context = s.retrieve_context("roundtrip", top_k=3, mode="lexical")
+assert any(h["id"] == lid for h in context["results"]), context
+print("   retrieve_context -> ranked", len(context["results"]), "match(es)")
+
 one = s.get_learning(lid)
 assert one["id"] == lid, one
 print("   get_learning    -> ok")
@@ -82,4 +86,4 @@ if [ "$STATUS" -ne 0 ]; then
 fi
 
 echo
-echo "RESULT: PASS — all four MCP tools forward to the daemon correctly."
+echo "RESULT: PASS — all five MCP tools forward to the daemon correctly."
